@@ -1,0 +1,13 @@
+{
+  "name": "personal-financial",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently --kill-others --names client,server \"npm run dev --prefix client\" \"npm run dev --prefix server\"",
+    "build": "npm run build --prefix client && npm run build --prefix server",
+    "typecheck": "npm run typecheck --prefix client && npm run typecheck --prefix server"
+  },
+  "devDependencies": {
+    "concurrently": "^10.0.6"
+  }
+}
