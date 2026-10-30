@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import { AppLayout } from "@/layouts/AppLayout";
 import { ModulePlaceholderPage } from "@/pages/ModulePlaceholderPage";
 import { navigationItems } from "@/routes/navigation";
+import { DashboardPage } from "@/pages/DashboardPage";
 
 export default function App() {
   return (
@@ -12,7 +13,13 @@ export default function App() {
             <Route
               key={path}
               path={path}
-              element={<ModulePlaceholderPage title={label} />}
+              element={
+                path === "/" ? (
+                  <DashboardPage />
+                ) : (
+                  <ModulePlaceholderPage title={label} />
+                )
+              }
             />
           ))}
 

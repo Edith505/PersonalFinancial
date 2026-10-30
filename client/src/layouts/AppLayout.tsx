@@ -3,6 +3,7 @@ import { Menu, Moon, Sun, Wallet, X } from "lucide-react";
 import { Outlet } from "react-router";
 import { Button } from "@/components/ui/button";
 import { Sidebar } from "@/components/navigation/Sidebar";
+import { UserProfileBlock } from "@/components/profile/UserProfileBlock";
 
 export function AppLayout() {
   const [isDark, setIsDark] = useState(false);
@@ -50,9 +51,10 @@ export function AppLayout() {
                   )}
                 </Button>
 
-                <span className="text-sm font-medium">
-                  Espace de démonstration
-                </span>
+                <UserProfileBlock
+                  displayName="Alex Morgan"
+                  subtitle="Profil de démonstration"
+                />
               </div>
 
               <Button
