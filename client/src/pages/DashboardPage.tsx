@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/card";
 import { StatCard } from "@/features/dashboard/components/StatCard";
 import { dashboardDemo } from "@/features/dashboard/data/dashboard-demo";
+import { CashFlowChart } from "@/features/dashboard/components/CashFlowChart";
+import { RecentTransactions } from "@/features/dashboard/components/RecentTransactions";
 
 export function DashboardPage() {
   const { balances, monthlyActivity, currency, periodLabel } =
@@ -113,7 +115,10 @@ export function DashboardPage() {
           icon={CreditCard}
         />
       </div>
-
+        <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+            <CashFlowChart />
+            <RecentTransactions />
+        </div>
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
