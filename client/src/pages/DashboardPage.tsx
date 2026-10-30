@@ -16,6 +16,11 @@ import { StatCard } from "@/features/dashboard/components/StatCard";
 import { dashboardDemo } from "@/features/dashboard/data/dashboard-demo";
 import { CashFlowChart } from "@/features/dashboard/components/CashFlowChart";
 import { RecentTransactions } from "@/features/dashboard/components/RecentTransactions";
+import { UpcomingPayments } from "@/features/dashboard/components/UpcomingPayments";
+import { BudgetOverview } from "@/features/dashboard/components/BudgetOverview";
+import { PaymentCardOverview } from "@/features/dashboard/components/PaymentCardOverview";
+import { GoalsOverview } from "@/features/dashboard/components/GoalsOverview";
+import { ProjectsOverview } from "@/features/dashboard/components/ProjectsOverview";
 
 export function DashboardPage() {
   const { balances, monthlyActivity, currency, periodLabel } =
@@ -119,6 +124,15 @@ export function DashboardPage() {
             <CashFlowChart />
             <RecentTransactions />
         </div>
+        <div className="grid min-w-0 gap-6 xl:grid-cols-2">
+          <UpcomingPayments />
+          <BudgetOverview />
+        </div>
+        <div className="grid min-w-0 gap-6 xl:grid-cols-2">
+          <PaymentCardOverview />
+          <GoalsOverview />
+        </div>
+        <ProjectsOverview />
       <Card className="rounded-2xl">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

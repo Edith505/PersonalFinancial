@@ -69,3 +69,107 @@ export const recentTransactionsDemo: DemoTransaction[] = [
     type: "EXPENSE",
   },
 ];
+
+export const upcomingPaymentsDemo = [
+  {
+    id: "demo-payment-1",
+    description: "Loyer",
+    dueDate: "2026-11-01",
+    dateLabel: "1 novembre 2026",
+    amountMinor: 120000,
+    accountName: "Compte principal",
+  },
+  {
+    id: "demo-payment-2",
+    description: "Téléphone",
+    dueDate: "2026-11-12",
+    dateLabel: "12 novembre 2026",
+    amountMinor: 7500,
+    accountName: "Visa •••• 4821",
+  },
+  {
+    id: "demo-payment-3",
+    description: "Internet",
+    dueDate: "2026-11-15",
+    dateLabel: "15 novembre 2026",
+    amountMinor: 8000,
+    accountName: "Compte principal",
+  },
+];
+
+export const budgetOverviewDemo = [
+  {
+    id: "demo-budget-1",
+    category: "Alimentation",
+    budgetMinor: 60000,
+    spentMinor: 42000,
+  },
+  {
+    id: "demo-budget-2",
+    category: "Transport",
+    budgetMinor: 25000,
+    spentMinor: 22500,
+  },
+  {
+    id: "demo-budget-3",
+    category: "Loisirs",
+    budgetMinor: 15000,
+    spentMinor: 18000,
+  },
+];
+
+export const paymentCardDemo = {
+  nickname: "Visa Horizon",
+  cardholderName: "Alex Morgan",
+  brand: "VISA",
+  last4: "4821",
+  creditLimitMinor: 500000,
+  outstandingMinor: dashboardDemo.balances.creditOutstanding,
+} as const;
+
+export const financialGoalsDemo = [
+  {
+    id: "demo-goal-1",
+    name: "Fonds d’urgence",
+    targetMinor: 1000000,
+    contributionsMinor: [300000, 150000, 50000],
+  },
+  {
+    id: "demo-goal-2",
+    name: "Voyage",
+    targetMinor: 300000,
+    contributionsMinor: [75000, 25000],
+  },
+];
+
+type DemoProject = {
+  id: string;
+  name: string;
+  status: "PLANNED" | "ACTIVE";
+  budgetMinor: number | null;
+  expenseAmountsMinor: number[];
+};
+
+export const projectsOverviewDemo: DemoProject[] = [
+  {
+    id: "demo-project-1",
+    name: "Aménagement du bureau",
+    status: "ACTIVE",
+    budgetMinor: 150000,
+    expenseAmountsMinor: [45000, 18000],
+  },
+  {
+    id: "demo-project-2",
+    name: "Entretien du véhicule",
+    status: "ACTIVE",
+    budgetMinor: null,
+    expenseAmountsMinor: [12500, 8500],
+  },
+  {
+    id: "demo-project-3",
+    name: "Voyage de printemps",
+    status: "PLANNED",
+    budgetMinor: 300000,
+    expenseAmountsMinor: [],
+  },
+];
