@@ -113,7 +113,7 @@ export function DashboardPage() {
         />
 
         <StatCard
-          title="Solde dû — crédit"
+          title="Solde dû : crédit"
           amountMinor={balances.creditOutstanding}
           currency={currency}
           description="Montant restant à rembourser."

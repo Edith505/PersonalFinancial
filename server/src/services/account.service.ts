@@ -416,3 +416,25 @@ export async function setAccountStatus(
     return updatedAccount;
   });
 }
+
+export async function getAccountOptions(userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const profiles = await tx.financialProfile.findMany({
+      where: { userId, isActive: true },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: { id: true, name: true },
+    });
+
+    const currencies = await tx.currency.findMany({
+      where: { isActive: true },
+      orderBy: { code: "asc" },
+      select: {
+        code: true,
+        name: true,
+        minorUnit: true,
+      },
+    });
+
+    return { profiles, currencies };
+  });
+}

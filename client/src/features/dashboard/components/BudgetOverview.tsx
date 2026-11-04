@@ -90,7 +90,7 @@ export function BudgetOverview() {
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={Math.min(percentage, 100)}
-                  aria-valuetext={`${displayedPercentage} % du budget utilisé — ${state.label}`}
+                  aria-valuetext={`${displayedPercentage} % du budget utilisé - ${state.label}`}
                   className="mt-3 h-2 overflow-hidden rounded-full bg-muted"
                 >
                   <div

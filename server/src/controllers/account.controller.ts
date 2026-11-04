@@ -7,6 +7,7 @@ import {
   listAccounts,
   updateAccount,
   setAccountStatus,
+  getAccountOptions,
 } from "../services/account.service.js";
 
 import {
@@ -127,6 +128,21 @@ export const setAccountStatusController: RequestHandler = async (
     );
 
     response.json({ item: account });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAccountOptionsController: RequestHandler = async (
+  _request,
+  response,
+  next,
+) => {
+  try {
+    const userId = await getCurrentUserId();
+    const options = await getAccountOptions(userId);
+
+    response.json(options);
   } catch (error) {
     next(error);
   }

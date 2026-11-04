@@ -107,7 +107,7 @@ export function CashFlowChart() {
                 formatter={(value) =>
                   typeof value === "number"
                     ? moneyFormatter.format(value)
-                    : "—"
+                    : ":"
                 }
               />
 

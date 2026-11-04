@@ -3,6 +3,7 @@ import { AppLayout } from "@/layouts/AppLayout";
 import { ModulePlaceholderPage } from "@/pages/ModulePlaceholderPage";
 import { navigationItems } from "@/routes/navigation";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { AccountsPage } from "@/pages/AccountsPage";
 
 export default function App() {
   return (
@@ -16,6 +17,8 @@ export default function App() {
               element={
                 path === "/" ? (
                   <DashboardPage />
+                ) : path === "/accounts" ? (
+                  <AccountsPage />
                 ) : (
                   <ModulePlaceholderPage title={label} />
                 )
