@@ -18,6 +18,12 @@ model User {
   updatedAt   DateTime @updatedAt
 
   financialProfiles FinancialProfile[]
+  categories        Category[]
+  budgets           Budget[]
+  projects          Project[]
+  financialGoals    FinancialGoal[]
+  setting           Setting?
+  auditLogs         AuditLog[]
 }
 
 model FinancialProfile {
@@ -29,14 +35,601 @@ model FinancialProfile {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Restrict)
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  accounts              FinancialAccount[]
+  budgets               Budget[]
+  projects              Project[]
+  financialGoals        FinancialGoal[]
+  defaultForSettings    Setting[]
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
 
   @@unique([userId, id])
 }
 
 model Currency {
-  code      String  @id
+  code               String             @id
+  name               String
+  minorUnit          Int
+  isActive           Boolean            @default(true)
+  accounts           FinancialAccount[]
+  budgets            Budget[]
+  projects           Project[]
+  financialGoals     FinancialGoal[]
+  defaultForSettings Setting[]
+}
+
+enum FinancialAccountType {
+  CHECKING
+  SAVINGS
+  CASH
+  CREDIT
+  LIABILITY
+  INVESTMENT
+  MOBILE_MONEY
+  OTHER
+}
+
+enum PaymentCardType {
+  CREDIT
+  DEBIT
+  PREPAID
+  OTHER
+}
+
+enum PaymentCardBrand {
+  VISA
+  MASTERCARD
+  AMEX
+  OTHER
+}
+
+model FinancialAccount {
+  id                  String               @id @default(cuid())
+  userId              String
+  financialProfileId  String
+  name                String
+  type                FinancialAccountType
+  currencyCode        String
+  openingBalanceMinor BigInt               @default(0)
+  openingBalanceDate  DateTime
+  institutionName     String?
+  description         String?
+  creditLimitMinor    BigInt?
+  statementClosingDay Int?
+  paymentDueDay       Int?
+  isActive            Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  debt                Debt?
+
+  financialProfile FinancialProfile @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  currency         Currency         @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+
+  paymentCards PaymentCard[]
+  transactions Transaction[]
+
+  outgoingTransfers     Transfer[]             @relation("TransferSource")
+  incomingTransfers     Transfer[]             @relation("TransferDestination")
+  scheduledTransactions ScheduledTransaction[]
+
+  goalContributions GoalContribution[]
+
+  @@unique([userId, id])
+  @@unique([userId, id, currencyCode])
+  @@index([userId, financialProfileId, isActive])
+  @@index([currencyCode])
+}
+
+model PaymentCard {
+  id              String           @id @default(cuid())
+  userId          String
+  linkedAccountId String
+  nickname        String
+  cardholderName  String
+  brand           PaymentCardBrand
+  type            PaymentCardType
+  last4           String
+  expiryMonth     Int?
+  expiryYear      Int?
+  visualTheme     String?
+  isActive        Boolean          @default(true)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  linkedAccount         FinancialAccount       @relation(fields: [userId, linkedAccountId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
+
+  @@unique([userId, id])
+  @@unique([userId, linkedAccountId, id])
+  @@index([userId, linkedAccountId, isActive])
+}
+
+enum CategoryType {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+  ADJUSTMENT
+}
+
+enum TransactionStatus {
+  PENDING
+  POSTED
+  CANCELLED
+}
+
+model Category {
+  id        String       @id @default(cuid())
+  userId    String
   name      String
-  minorUnit Int
-  isActive  Boolean @default(true)
+  type      CategoryType
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  subCategories         SubCategory[]
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
+  budgetItems           BudgetItem[]
+
+  @@unique([userId, id])
+  @@unique([userId, type, name])
+  @@index([userId, isActive])
+}
+
+model SubCategory {
+  id         String   @id @default(cuid())
+  userId     String
+  categoryId String
+  name       String
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  category Category @relation(fields: [userId, categoryId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
+
+  @@unique([userId, categoryId, id])
+  @@unique([userId, categoryId, name])
+}
+
+model Transaction {
+  id                 String            @id @default(cuid())
+  userId             String
+  financialProfileId String
+  accountId          String
+  paymentCardId      String?
+  categoryId         String?
+  subCategoryId      String?
+  amountMinor        BigInt
+  currencyCode       String
+  type               TransactionType
+  status             TransactionStatus @default(PENDING)
+  description        String
+  merchant           String?
+  transactionDate    DateTime
+  postedAt           DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  projectId          String?
+
+  account             FinancialAccount     @relation(fields: [userId, accountId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  paymentCard         PaymentCard?         @relation(fields: [userId, accountId, paymentCardId], references: [userId, linkedAccountId, id], onDelete: Restrict, onUpdate: Restrict)
+  category            Category?            @relation(fields: [userId, categoryId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  subCategory         SubCategory?         @relation(fields: [userId, categoryId, subCategoryId], references: [userId, categoryId, id], onDelete: Restrict, onUpdate: Restrict)
+  project             Project?             @relation(fields: [userId, projectId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  transferAsFee       Transfer?            @relation("TransferFee")
+  financialProfile    FinancialProfile     @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  scheduledOccurrence ScheduledOccurrence?
+
+  @@unique([userId, id])
+  @@index([userId, transactionDate, id])
+  @@index([userId, accountId, status, transactionDate])
+  @@index([userId, financialProfileId, transactionDate])
+  @@index([userId, paymentCardId, transactionDate])
+  @@index([userId, categoryId, transactionDate])
+  @@index([userId, projectId, transactionDate])
+}
+
+model Transfer {
+  id                      String            @id @default(cuid())
+  userId                  String
+  sourceAccountId         String
+  destinationAccountId    String
+  sourceAmountMinor       BigInt
+  sourceCurrencyCode      String
+  destinationAmountMinor  BigInt
+  destinationCurrencyCode String
+  exchangeRate            String
+  feeTransactionId        String?
+  description             String?
+  transferDate            DateTime
+  status                  TransactionStatus @default(PENDING)
+  postedAt                DateTime?
+  createdAt               DateTime          @default(now())
+  updatedAt               DateTime          @updatedAt
+  debtPayment             DebtPayment?
+
+  sourceAccount      FinancialAccount @relation("TransferSource", fields: [userId, sourceAccountId, sourceCurrencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  destinationAccount FinancialAccount @relation("TransferDestination", fields: [userId, destinationAccountId, destinationCurrencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  feeTransaction     Transaction?     @relation("TransferFee", fields: [userId, feeTransactionId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, id])
+  @@unique([userId, feeTransactionId])
+  @@unique([userId, id, destinationAccountId, destinationCurrencyCode])
+  @@index([userId, transferDate, id])
+  @@index([userId, sourceAccountId, status, transferDate])
+  @@index([userId, destinationAccountId, status, transferDate])
+}
+
+enum RecurrenceFrequency {
+  ONCE
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+enum ScheduledOccurrenceStatus {
+  PLANNED
+  POSTED
+  SKIPPED
+  CANCELLED
+}
+
+model ScheduledTransaction {
+  id                 String              @id @default(cuid())
+  userId             String
+  financialProfileId String
+  accountId          String
+  paymentCardId      String?
+  categoryId         String
+  subCategoryId      String?
+  description        String
+  merchant           String?
+  amountMinor        BigInt
+  currencyCode       String
+  type               CategoryType
+  frequency          RecurrenceFrequency
+  startDate          String
+  nextDueDate        String?
+  endDate            String?
+  timeZone           String
+  automaticCreation  Boolean             @default(false)
+  isActive           Boolean             @default(true)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  projectId          String?
+
+  account          FinancialAccount      @relation(fields: [userId, accountId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  paymentCard      PaymentCard?          @relation(fields: [userId, accountId, paymentCardId], references: [userId, linkedAccountId, id], onDelete: Restrict, onUpdate: Restrict)
+  category         Category              @relation(fields: [userId, categoryId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  subCategory      SubCategory?          @relation(fields: [userId, categoryId, subCategoryId], references: [userId, categoryId, id], onDelete: Restrict, onUpdate: Restrict)
+  project          Project?              @relation(fields: [userId, projectId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  financialProfile FinancialProfile      @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  occurrences      ScheduledOccurrence[]
+
+  @@unique([userId, id])
+  @@index([userId, isActive, nextDueDate])
+  @@index([userId, accountId])
+  @@index([userId, paymentCardId])
+  @@index([userId, categoryId])
+  @@index([userId, projectId])
+}
+
+model ScheduledOccurrence {
+  id                     String                    @id @default(cuid())
+  userId                 String
+  scheduledTransactionId String
+  dueDate                String
+  status                 ScheduledOccurrenceStatus @default(PLANNED)
+  transactionId          String?
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
+
+  scheduledTransaction ScheduledTransaction @relation(fields: [userId, scheduledTransactionId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  transaction          Transaction?         @relation(fields: [userId, transactionId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, id])
+  @@unique([userId, scheduledTransactionId, dueDate])
+  @@unique([userId, transactionId])
+  @@index([userId, status, dueDate])
+}
+
+model Budget {
+  id                 String   @id @default(cuid())
+  userId             String
+  financialProfileId String?
+  currencyCode       String
+  name               String
+  description        String?
+  isActive           Boolean  @default(true)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  financialProfile FinancialProfile? @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  currency         Currency          @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+
+  periods BudgetPeriod[]
+
+  @@unique([userId, id])
+  @@index([userId, financialProfileId, isActive])
+  @@index([currencyCode])
+}
+
+model BudgetPeriod {
+  id        String   @id @default(cuid())
+  userId    String
+  budgetId  String
+  startDate String
+  endDate   String
+  timeZone  String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  budget Budget @relation(fields: [userId, budgetId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  items BudgetItem[]
+
+  @@unique([userId, id])
+  @@unique([userId, budgetId, startDate])
+  @@index([userId, budgetId, endDate])
+}
+
+model BudgetItem {
+  id             String   @id @default(cuid())
+  userId         String
+  budgetPeriodId String
+  categoryId     String
+  amountMinor    BigInt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  budgetPeriod BudgetPeriod @relation(fields: [userId, budgetPeriodId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  category     Category     @relation(fields: [userId, categoryId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, id])
+  @@unique([userId, budgetPeriodId, categoryId])
+  @@index([userId, categoryId])
+}
+
+enum ProjectStatus {
+  PLANNED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  ARCHIVED
+}
+
+model Project {
+  id                 String        @id @default(cuid())
+  userId             String
+  financialProfileId String?
+  currencyCode       String
+  name               String
+  description        String?
+  budgetAmountMinor  BigInt?
+  startDate          String
+  endDate            String?
+  status             ProjectStatus @default(PLANNED)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  financialProfile FinancialProfile? @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  currency         Currency          @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+
+  transactions          Transaction[]
+  scheduledTransactions ScheduledTransaction[]
+
+  @@unique([userId, id])
+  @@unique([userId, id, currencyCode])
+  @@index([userId, financialProfileId, status])
+  @@index([currencyCode])
+}
+
+enum FinancialGoalType {
+  EMERGENCY_FUND
+  EDUCATION
+  VEHICLE
+  TRAVEL
+  CONSTRUCTION
+  INVESTMENT
+  OTHER
+}
+
+enum FinancialGoalStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+  ARCHIVED
+}
+
+model FinancialGoal {
+  id                 String              @id @default(cuid())
+  userId             String
+  financialProfileId String?
+  currencyCode       String
+  name               String
+  description        String?
+  type               FinancialGoalType   @default(OTHER)
+  targetAmountMinor  BigInt
+  targetDate         String?
+  status             FinancialGoalStatus @default(ACTIVE)
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+
+  user             User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  financialProfile FinancialProfile? @relation(fields: [userId, financialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+  currency         Currency          @relation(fields: [currencyCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+
+  contributions GoalContribution[]
+
+  @@unique([userId, id])
+  @@unique([userId, id, currencyCode])
+  @@index([userId, financialProfileId, status])
+  @@index([currencyCode])
+}
+
+model GoalContribution {
+  id               String   @id @default(cuid())
+  userId           String
+  financialGoalId  String
+  accountId        String
+  currencyCode     String
+  amountMinor      BigInt
+  description      String?
+  contributionDate DateTime
+  createdAt        DateTime @default(now())
+
+  financialGoal FinancialGoal    @relation(fields: [userId, financialGoalId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  account       FinancialAccount @relation(fields: [userId, accountId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, id])
+  @@index([userId, financialGoalId, contributionDate])
+  @@index([userId, accountId, financialGoalId])
+}
+
+enum DebtStatus {
+  ACTIVE
+  PAID_OFF
+  ARCHIVED
+}
+
+model Debt {
+  id                  String     @id @default(cuid())
+  userId              String
+  linkedAccountId     String
+  currencyCode        String
+  name                String
+  description         String?
+  originalAmountMinor BigInt
+  annualInterestRate  String?
+  minimumPaymentMinor BigInt?
+  startDate           String
+  nextDueDate         String?
+  status              DebtStatus @default(ACTIVE)
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  linkedAccount FinancialAccount @relation(fields: [userId, linkedAccountId, currencyCode], references: [userId, id, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+
+  payments DebtPayment[]
+
+  @@unique([userId, id])
+  @@unique([userId, linkedAccountId, currencyCode])
+  @@unique([userId, id, linkedAccountId, currencyCode])
+  @@index([userId, status, nextDueDate])
+}
+
+model DebtPayment {
+  id                   String   @id @default(cuid())
+  userId               String
+  debtId               String
+  transferId           String
+  accountId            String
+  currencyCode         String
+  principalAmountMinor BigInt
+  interestAmountMinor  BigInt   @default(0)
+  feesAmountMinor      BigInt   @default(0)
+  description          String?
+  createdAt            DateTime @default(now())
+
+  debt     Debt     @relation(fields: [userId, debtId, accountId, currencyCode], references: [userId, id, linkedAccountId, currencyCode], onDelete: Restrict, onUpdate: Restrict)
+  transfer Transfer @relation(fields: [userId, transferId, accountId, currencyCode], references: [userId, id, destinationAccountId, destinationCurrencyCode], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([userId, id])
+  @@unique([userId, transferId, accountId, currencyCode])
+  @@index([userId, debtId])
+}
+
+enum AppearanceTheme {
+  LIGHT
+  DARK
+  SYSTEM
+}
+
+enum PreferredDateFormat {
+  YYYY_MM_DD
+  DD_MM_YYYY
+  MM_DD_YYYY
+}
+
+model Setting {
+  id                        String              @id @default(cuid())
+  userId                    String              @unique
+  defaultCurrencyCode       String
+  defaultFinancialProfileId String?
+  locale                    String
+  timeZone                  String
+  theme                     AppearanceTheme     @default(SYSTEM)
+  dateFormat                PreferredDateFormat @default(YYYY_MM_DD)
+  createdAt                 DateTime            @default(now())
+  updatedAt                 DateTime            @updatedAt
+
+  user                    User              @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  defaultCurrency         Currency          @relation(fields: [defaultCurrencyCode], references: [code], onDelete: Restrict, onUpdate: Restrict)
+  defaultFinancialProfile FinancialProfile? @relation(fields: [userId, defaultFinancialProfileId], references: [userId, id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([defaultCurrencyCode])
+  @@index([userId, defaultFinancialProfileId])
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  CANCEL
+  DEACTIVATE
+  REACTIVATE
+}
+
+enum AuditEntityType {
+  USER
+  FINANCIAL_PROFILE
+  FINANCIAL_ACCOUNT
+  PAYMENT_CARD
+  CATEGORY
+  SUB_CATEGORY
+  TRANSACTION
+  TRANSFER
+  SCHEDULED_TRANSACTION
+  SCHEDULED_OCCURRENCE
+  BUDGET
+  BUDGET_PERIOD
+  BUDGET_ITEM
+  PROJECT
+  FINANCIAL_GOAL
+  GOAL_CONTRIBUTION
+  DEBT
+  DEBT_PAYMENT
+  SETTING
+}
+
+model AuditLog {
+  id         String          @id @default(cuid())
+  userId     String
+  action     AuditAction
+  entityType AuditEntityType
+  entityId   String
+  requestId  String?
+  createdAt  DateTime        @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([userId, createdAt, id])
+  @@index([userId, entityType, entityId, createdAt])
 }

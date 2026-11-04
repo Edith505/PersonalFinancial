@@ -10,7 +10,9 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "db:validate": "prisma validate",
     "db:format": "prisma format",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "db:seed:check": "tsc -p tsconfig.seed.json",
+    "db:seed": "npm run db:seed:check && prisma db seed"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.10.1",
