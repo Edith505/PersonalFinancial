@@ -6,6 +6,7 @@ import { errorHandler } from "./middlewares/errorHandler.js";
 import { healthRouter } from "./routes/health.routes.js";
 import { AppError } from "./utils/AppError.js";
 import { accountRouter } from "./routes/account.routes.js";
+import { categoryRouter } from "./routes/category.routes.js";
 
 
 export const app = express();
@@ -59,8 +60,8 @@ app.get("/", (_request, response) => {
 });
 
 app.use("/api/health", healthRouter);
-app.use("/api/health", healthRouter);
 app.use("/api/accounts", accountRouter);
+app.use("/api/categories", categoryRouter);
 
 app.use((_request, _response, next) => {
   next(

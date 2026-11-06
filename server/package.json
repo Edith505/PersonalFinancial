@@ -8,6 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/index.js",
     "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test:categories": "npm run build && node --test tests/categories.test.mjs",
     "db:validate": "prisma validate",
     "db:format": "prisma format",
     "db:generate": "prisma generate",
