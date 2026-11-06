@@ -11,6 +11,7 @@ import {
   PiggyBank,
   Settings,
   Target,
+  Tags,
   Wallet,
   WalletCards,
 } from "lucide-react";
@@ -18,11 +19,12 @@ import {
 export const navigationItems = [
   { path: "/", label: "Dashboard", icon: LayoutDashboard },
   { path: "/transactions", label: "Transactions", icon: ListOrdered },
+  { path: "/categories", label: "Catégories", icon: Tags },
   { path: "/accounts", label: "Accounts", icon: Wallet },
   { path: "/cards", label: "Cards", icon: CreditCard },
   { path: "/budgets", label: "Budgets", icon: WalletCards },
   { path: "/income", label: "Income", icon: Banknote },
-  { path: "/transfers", label: "Transfers", icon: ArrowLeftRight },
+  { path: "/transfers", label: "Virements", icon: ArrowLeftRight },
   { path: "/savings", label: "Savings", icon: PiggyBank },
   { path: "/debts", label: "Debts", icon: HandCoins },
   { path: "/goals", label: "Goals", icon: Target },

@@ -4,6 +4,9 @@ import { ModulePlaceholderPage } from "@/pages/ModulePlaceholderPage";
 import { navigationItems } from "@/routes/navigation";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { AccountsPage } from "@/pages/AccountsPage";
+import { CategoriesPage } from "@/pages/CategoriesPage";
+import { TransactionsPage } from "@/pages/TransactionsPage";
+import { TransfersPage } from "@/pages/TransfersPage";
 
 export default function App() {
   return (
@@ -19,6 +22,12 @@ export default function App() {
                   <DashboardPage />
                 ) : path === "/accounts" ? (
                   <AccountsPage />
+                ) : path === "/categories" ? (
+                  <CategoriesPage />
+                ) : path === "/transactions" ? (
+                  <TransactionsPage />
+                ) : path === "/transfers" ? (
+                  <TransfersPage />
                 ) : (
                   <ModulePlaceholderPage title={label} />
                 )

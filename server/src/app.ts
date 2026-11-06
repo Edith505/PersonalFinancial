@@ -7,6 +7,8 @@ import { healthRouter } from "./routes/health.routes.js";
 import { AppError } from "./utils/AppError.js";
 import { accountRouter } from "./routes/account.routes.js";
 import { categoryRouter } from "./routes/category.routes.js";
+import { transactionRouter } from "./routes/transaction.routes.js";
+import { transferRouter } from "./routes/transfer.routes.js";
 
 
 export const app = express();
@@ -62,6 +64,8 @@ app.get("/", (_request, response) => {
 app.use("/api/health", healthRouter);
 app.use("/api/accounts", accountRouter);
 app.use("/api/categories", categoryRouter);
+app.use("/api/transactions", transactionRouter);
+app.use("/api/transfers", transferRouter);
 
 app.use((_request, _response, next) => {
   next(
