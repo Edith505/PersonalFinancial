@@ -9,6 +9,7 @@ import {
 import { formatMoney } from "@/lib/format-money";
 import { CreateAccountForm } from "@/features/accounts/CreateAccountForm";
 import { AccountStatusActions } from "@/features/accounts/AccountStatusActions";
+import { EditAccountForm } from "@/features/accounts/EditAccountForm";
 
 const accountTypeLabels: Record<AccountType, string> = {
   CHECKING: "Compte courant",
@@ -31,6 +32,9 @@ export function AccountsPage() {
   const [successMessage, setSuccessMessage] = useState("");
   const [page, setPage] = useState(1);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [editingAccountId, setEditingAccountId] = useState<string | null>(
+    null,
+  );
   const [state, setState] = useState<LoadState>({
     status: "loading",
   });
@@ -108,7 +112,9 @@ export function AccountsPage() {
           <Button
             type="button"
             aria-expanded={showCreateForm}
-            aria-controls={showCreateForm ? "create-account-panel" : undefined}
+            aria-controls={
+              showCreateForm ? "create-account-panel" : undefined
+            }
             disabled={showCreateForm}
             onClick={() => {
               setSuccessMessage("");
@@ -135,8 +141,6 @@ export function AccountsPage() {
           onCreated={(account) => {
             setShowCreateForm(false);
             setSuccessMessage(`Le compte « ${account.name} » a été créé.`);
-
-            // Les comptes sont classés du plus ancien au plus récent.
             setPage(1);
             reload();
           }}
@@ -188,6 +192,7 @@ export function AccountsPage() {
                   ? "Aucun compte pour le moment"
                   : "Aucun compte sur cette page"}
               </h2>
+
               <p className="mt-2 text-muted-foreground">
                 {state.data.pagination.total === 0
                   ? "Vos comptes apparaîtront ici après leur création."
@@ -247,17 +252,47 @@ export function AccountsPage() {
                     {account.financialProfile.name}
                   </p>
 
-                 <AccountStatusActions
-                    account={account}
-                    onChanged={(isActive) => {
-                      setSuccessMessage(
-                        `Le compte « ${account.name} » a été ${
-                          isActive ? "réactivé" : "désactivé"
-                        }.`,
-                      );
-                      reload();
-                    }}
-                  /> 
+                  {editingAccountId === account.id ? (
+                    <EditAccountForm
+                      key={account.id}
+                      accountId={account.id}
+                      onCancel={() => setEditingAccountId(null)}
+                      onSaved={(name) => {
+                        setEditingAccountId(null);
+                        setSuccessMessage(
+                          `Le compte « ${name} » a été modifié.`,
+                        );
+                        reload();
+                      }}
+                    />
+                  ) : (
+                    <div className="mt-4">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={editingAccountId !== null}
+                        aria-label={`Modifier le compte ${account.name}`}
+                        onClick={() => {
+                          setSuccessMessage("");
+                          setEditingAccountId(account.id);
+                        }}
+                      >
+                        Modifier
+                      </Button>
+
+                      <AccountStatusActions
+                        account={account}
+                        onChanged={(isActive) => {
+                          setSuccessMessage(
+                            `Le compte « ${account.name} » a été ${
+                              isActive ? "réactivé" : "désactivé"
+                            }.`,
+                          );
+                          reload();
+                        }}
+                      />
+                    </div>
+                  )}
                 </article>
               ))}
             </div>

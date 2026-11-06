@@ -438,3 +438,30 @@ export async function getAccountOptions(userId: string) {
     return { profiles, currencies };
   });
 }
+
+export async function getAccountDetails(
+  userId: string,
+  accountId: string,
+) {
+  const account = await prisma.financialAccount.findUnique({
+    where: {
+      userId_id: { userId, id: accountId },
+    },
+    select: {
+      id: true,
+      name: true,
+      institutionName: true,
+      description: true,
+    },
+  });
+
+  if (!account) {
+    throw new AppError(
+      404,
+      "ACCOUNT_NOT_FOUND",
+      "Le compte demandé est indisponible.",
+    );
+  }
+
+  return account;
+}

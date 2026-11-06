@@ -8,6 +8,7 @@ import {
   updateAccount,
   setAccountStatus,
   getAccountOptions,
+  getAccountDetails,
 } from "../services/account.service.js";
 
 import {
@@ -143,6 +144,31 @@ export const getAccountOptionsController: RequestHandler = async (
     const options = await getAccountOptions(userId);
 
     response.json(options);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getAccountDetailsController: RequestHandler = async (
+  request,
+  response,
+  next,
+) => {
+  try {
+    const params = accountParamsSchema.safeParse(request.params);
+
+    if (!params.success) {
+      throw new AppError(
+        400,
+        "INVALID_ACCOUNT_ID",
+        "L’identifiant du compte est invalide.",
+      );
+    }
+
+    const userId = await getCurrentUserId();
+    const account = await getAccountDetails(userId, params.data.id);
+
+    response.json({ item: account });
   } catch (error) {
     next(error);
   }
