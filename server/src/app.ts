@@ -9,6 +9,7 @@ import { accountRouter } from "./routes/account.routes.js";
 import { categoryRouter } from "./routes/category.routes.js";
 import { transactionRouter } from "./routes/transaction.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
+import { dashboardRouter } from "./routes/dashboard.routes.js";
 
 
 export const app = express();
@@ -66,6 +67,7 @@ app.use("/api/accounts", accountRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/transactions", transactionRouter);
 app.use("/api/transfers", transferRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 app.use((_request, _response, next) => {
   next(
