@@ -1,8 +1,8 @@
 import type { RequestHandler } from "express";
-import { createCard, getCardOptions, listCards, setCardStatus } from "../services/card.service.js";
+import { createCard, getCardOptions, listCards, setCardStatus, updateCard } from "../services/card.service.js";
 import { getCurrentUserId } from "../services/currentUser.service.js";
 import { AppError } from "../utils/AppError.js";
-import { cardParamsSchema, createCardSchema, listCardsQuerySchema, setCardStatusSchema } from "../validators/card.validator.js";
+import { cardParamsSchema, createCardSchema, listCardsQuerySchema, setCardStatusSchema, updateCardSchema } from "../validators/card.validator.js";
 
 export const listCardsController: RequestHandler = async (request, response, next) => {
   try {
@@ -48,6 +48,20 @@ export const setCardStatusController: RequestHandler = async (request, response,
     const userId = await getCurrentUserId();
     const item = await setCardStatus(userId, params.data.id, body.data.isActive);
     response.json({ item });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const updateCardController: RequestHandler = async (request, response, next) => {
+  try {
+    const params = cardParamsSchema.safeParse(request.params);
+    const body = updateCardSchema.safeParse(request.body);
+    if (!params.success || !body.success) {
+      throw new AppError(400, "INVALID_CARD_UPDATE", "Les modifications de la carte sont invalides.");
+    }
+    const userId = await getCurrentUserId();
+    response.json({ item: await updateCard(userId, params.data.id, body.data) });
   } catch (error) {
     next(error);
   }

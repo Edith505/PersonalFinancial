@@ -44,6 +44,40 @@ export interface CreateCardInput {
   expiryYear: number | null;
 }
 
+export interface UpdateCardInput {
+  nickname?: string;
+  cardholderName?: string;
+  expiryMonth?: number | null;
+  expiryYear?: number | null;
+}
+
+export async function updateCard(cardId: string, input: UpdateCardInput): Promise<PaymentCard> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/cards/${encodeURIComponent(cardId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(input),
+    });
+  } catch {
+    throw new Error("Connexion interrompue. Actualisez la liste pour vérifier les informations de la carte avant de réessayer.");
+  }
+  if (!response.ok) {
+    const result: { error?: { code?: string } } = await response.json().catch(() => ({}));
+    switch (result.error?.code) {
+      case "INVALID_CARD_UPDATE": throw new Error("Vérifiez le nom, le titulaire et la paire mois/année d’expiration.");
+      case "CARD_NOT_FOUND": throw new Error("Cette carte n’est plus disponible. Actualisez la liste.");
+      default: throw new Error("La modification n’a pas pu être confirmée. Actualisez la liste avant de réessayer.");
+    }
+  }
+  try {
+    const result: { item: PaymentCard } = await response.json();
+    return result.item;
+  } catch {
+    throw new Error("Réponse illisible. Actualisez la liste pour vérifier les informations de la carte.");
+  }
+}
+
 export async function fetchCardOptions(signal: AbortSignal): Promise<CardOptions> {
   const response = await fetch("/api/cards/options", {
     signal, cache: "no-store", headers: { Accept: "application/json" },

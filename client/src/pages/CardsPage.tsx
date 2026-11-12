@@ -3,6 +3,7 @@ import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateCardForm } from "@/features/cards/CreateCardForm";
 import { CardStatusControl } from "@/features/cards/CardStatusControl";
+import { EditCardForm } from "@/features/cards/EditCardForm";
 import { fetchCards, type CardFilter, type CardsResponse, type PaymentCard } from "@/features/cards/cards-api";
 
 type LoadState =
@@ -22,7 +23,9 @@ const types: Record<PaymentCard["type"], string> = {
   CREDIT: "Crédit", DEBIT: "Débit", PREPAID: "Prépayée", OTHER: "Autre type",
 };
 
-function CardDetails({ card, onUpdated }: { card: PaymentCard; onUpdated: (card: PaymentCard) => void }) {
+function CardDetails({ card, onUpdated }: { card: PaymentCard; onUpdated: (card: PaymentCard, action: "edit" | "status") => void }) {
+  const [editing, setEditing] = useState(false);
+  const [confirmingStatus, setConfirmingStatus] = useState(false);
   const expiry = card.expiryMonth !== null && card.expiryYear !== null
     ? `${String(card.expiryMonth).padStart(2, "0")}/${card.expiryYear}`
     : "Non renseignée";
@@ -44,7 +47,19 @@ function CardDetails({ card, onUpdated }: { card: PaymentCard; onUpdated: (card:
         <div><dt className="text-muted-foreground">Compte associé</dt><dd className="mt-1 break-words font-medium">{card.linkedAccount.name} ({card.linkedAccount.currencyCode}){!card.linkedAccount.isActive && " · Compte inactif"}</dd></div>
         <div><dt className="text-muted-foreground">Profil du compte</dt><dd className="mt-1 break-words font-medium">{card.linkedAccount.financialProfile.name}</dd></div>
       </dl>
-      <CardStatusControl card={card} onUpdated={onUpdated} />
+      {editing ? (
+        <EditCardForm card={card} onCancel={() => setEditing(false)} onUpdated={(updated) => {
+          setEditing(false);
+          onUpdated(updated, "edit");
+        }} />
+      ) : (
+        <>
+          <div className="px-6 pb-4">
+            <Button type="button" variant="outline" disabled={confirmingStatus} onClick={() => setEditing(true)}>Modifier</Button>
+          </div>
+          <CardStatusControl card={card} onConfirmingChange={setConfirmingStatus} onUpdated={(updated) => onUpdated(updated, "status")} />
+        </>
+      )}
     </article>
   );
 }
@@ -133,8 +148,10 @@ export function CardsPage() {
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {state.data.items.map((card) => <CardDetails key={card.id} card={card} onUpdated={(updated) => {
-                setSuccess(`La carte « ${updated.nickname} » a été ${updated.isActive ? "réactivée" : "désactivée"}.`);
+              {state.data.items.map((card) => <CardDetails key={card.id} card={card} onUpdated={(updated, action) => {
+                setSuccess(action === "edit"
+                  ? `Les informations de la carte « ${updated.nickname} » ont été modifiées.`
+                  : `La carte « ${updated.nickname} » a été ${updated.isActive ? "réactivée" : "désactivée"}.`);
                 setPage(1);
                 reload();
               }} />)}

@@ -31,6 +31,7 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
   const [error, setError] = useState("");
   const [type, setType] = useState<EntryType>(initialType);
   const [accountId, setAccountId] = useState("");
+  const [paymentCardId, setPaymentCardId] = useState("");
   const [profileId, setProfileId] = useState("");
   const [categoryId, setCategoryId] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -56,6 +57,7 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
   }, []);
 
   const account = options?.accounts.find((item) => item.id === accountId);
+  const availableCards = account?.paymentCards ?? [];
   const categories = options?.categories.filter((item) => item.type === type) ?? [];
   const selectedCategoryId = categories.some((item) => item.id === categoryId)
     ? categoryId
@@ -83,8 +85,12 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
         throw new Error("La transaction ne peut pas précéder le début du suivi du compte.");
       }
       const merchant = read("merchant");
+      if (paymentCardId && (type !== "EXPENSE" || !availableCards.some((card) => card.id === paymentCardId))) {
+        throw new Error("Choisissez une carte du compte sélectionné ou retirez la carte associée.");
+      }
       const transaction = await createTransaction({
         accountId,
+        ...(type === "EXPENSE" && paymentCardId ? { paymentCardId } : {}),
         financialProfileId: profileId,
         categoryId: selectedCategoryId,
         type,
@@ -122,7 +128,7 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
             <legend className="sr-only">Informations de la transaction</legend>
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="text-sm font-medium">Type
-                <select value={type} onChange={(event) => { setType(event.target.value as EntryType); setCategoryId(""); setError(""); }} className={fieldClass}>
+                <select value={type} onChange={(event) => { setType(event.target.value as EntryType); setCategoryId(""); setPaymentCardId(""); setError(""); }} className={fieldClass}>
                   <option value="EXPENSE">Dépense</option><option value="INCOME">Revenu</option>
                 </select>
               </label>
@@ -130,6 +136,7 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
                 <select value={accountId} onChange={(event) => {
                   const selected = options.accounts.find((item) => item.id === event.target.value);
                   setAccountId(event.target.value);
+                  setPaymentCardId("");
                   setProfileId(selected?.financialProfileId ?? "");
                   setError("");
                 }} required className={fieldClass}>
@@ -141,6 +148,15 @@ export function CreateTransactionForm({ initialType, onCreated, onCancel }: Prop
                   {options.profiles.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
                 </select>
               </label>
+              {type === "EXPENSE" && <label className="text-sm font-medium">Carte utilisée (facultatif)
+                <select value={paymentCardId} onChange={(event) => setPaymentCardId(event.target.value)} aria-describedby="transaction-card-help" className={fieldClass}>
+                  <option value="">Sans carte associée</option>
+                  {availableCards.map((card) => <option key={card.id} value={card.id}>{card.nickname} · •••• {card.last4}</option>)}
+                </select>
+                <span id="transaction-card-help" className="mt-1 block text-xs font-normal text-muted-foreground">
+                  {availableCards.length === 0 ? "Aucune carte active pour ce compte. Vous pouvez enregistrer la dépense sans carte associée." : "Les cartes actives du compte sélectionné sont proposées."}
+                </span>
+              </label>}
               <label className="text-sm font-medium">Catégorie
                 <select value={selectedCategoryId} onChange={(event) => setCategoryId(event.target.value)} required disabled={categories.length === 0} className={fieldClass}>
                   {categories.length === 0 && <option value="">Aucune catégorie disponible</option>}

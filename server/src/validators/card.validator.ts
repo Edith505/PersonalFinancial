@@ -34,3 +34,20 @@ export const cardParamsSchema = z.object({
 export const setCardStatusSchema = z.object({
   isActive: z.boolean(),
 }).strict();
+
+export const updateCardSchema = z.object({
+  nickname: cardNameSchema.optional(),
+  cardholderName: cardNameSchema.optional(),
+  expiryMonth: z.number().int().min(1).max(12).nullable().optional(),
+  expiryYear: z.number().int().min(2000).max(2099).nullable().optional(),
+}).strict().refine(
+  (value) => Object.values(value).some((field) => field !== undefined),
+  { message: "Fournissez au moins un champ à modifier." },
+).refine(
+  (value) => (value.expiryMonth === undefined && value.expiryYear === undefined) ||
+    (value.expiryMonth === null && value.expiryYear === null) ||
+    (typeof value.expiryMonth === "number" && typeof value.expiryYear === "number"),
+  { message: "Modifiez ou effacez le mois et l’année ensemble.", path: ["expiryMonth"] },
+);
+
+export type UpdateCardInput = z.infer<typeof updateCardSchema>;

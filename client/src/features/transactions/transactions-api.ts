@@ -15,6 +15,7 @@ export interface Transaction {
   account: { id: string; name: string };
   financialProfile: { id: string; name: string };
   category: { id: string; name: string; type: EntryType } | null;
+  paymentCard: { id: string; nickname: string; last4: string; isActive: boolean } | null;
 }
 
 export interface TransactionsResponse {
@@ -33,11 +34,13 @@ export interface TransactionOptions {
     currencyCode: string;
     minorUnit: number;
     openingBalanceDate: string;
+    paymentCards: Array<{ id: string; nickname: string; last4: string }>;
   }>;
 }
 
 export interface CreateTransactionPayload {
   accountId: string;
+  paymentCardId?: string;
   financialProfileId: string;
   categoryId: string;
   type: EntryType;
@@ -122,6 +125,8 @@ export async function createTransaction(payload: CreateTransactionPayload): Prom
       INVALID_TRANSACTION: "Vérifiez le montant, la date et les informations saisies.",
       ACCOUNT_NOT_FOUND: "Ce compte n’est plus disponible. Fermez puis rouvrez le formulaire.",
       ACCOUNT_UNAVAILABLE: "Le compte, son profil et sa devise doivent être actifs.",
+      TRANSACTION_CARD_NOT_FOUND: "Cette carte n’est pas disponible pour ce compte. Fermez puis rouvrez le formulaire pour actualiser les cartes.",
+      TRANSACTION_CARD_INACTIVE: "La carte choisie a été désactivée. Choisissez une autre carte ou enregistrez la dépense sans carte associée.",
       PROFILE_NOT_FOUND: "Le profil choisi n’est plus disponible.",
       CATEGORY_NOT_FOUND: "La catégorie choisie n’est plus disponible.",
       CATEGORY_TYPE_MISMATCH: "Choisissez une catégorie correspondant au type de transaction.",

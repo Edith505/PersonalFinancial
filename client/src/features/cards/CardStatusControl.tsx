@@ -5,9 +5,10 @@ import { setCardStatus, type PaymentCard } from "./cards-api";
 interface Props {
   card: PaymentCard;
   onUpdated: (card: PaymentCard) => void;
+  onConfirmingChange?: (confirming: boolean) => void;
 }
 
-export function CardStatusControl({ card, onUpdated }: Props) {
+export function CardStatusControl({ card, onUpdated, onConfirmingChange }: Props) {
   const titleId = useId();
   const panelId = useId();
   const [confirming, setConfirming] = useState(false);
@@ -25,6 +26,7 @@ export function CardStatusControl({ card, onUpdated }: Props) {
     try {
       const updated = await setCardStatus(card.id, !card.isActive);
       setConfirming(false);
+      onConfirmingChange?.(false);
       onUpdated(updated);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Impossible de modifier le statut de la carte.");
@@ -47,11 +49,11 @@ export function CardStatusControl({ card, onUpdated }: Props) {
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           <div className="flex flex-wrap gap-3">
             <Button type="submit" variant={card.isActive ? "destructive" : "default"} disabled={submitting}>{submitting ? "Enregistrement…" : `Confirmer : ${action.toLowerCase()}`}</Button>
-            <Button type="button" variant="outline" disabled={submitting} onClick={() => { setConfirming(false); setError(""); }}>Annuler</Button>
+            <Button type="button" variant="outline" disabled={submitting} onClick={() => { setConfirming(false); setError(""); onConfirmingChange?.(false); }}>Annuler</Button>
           </div>
         </form>
       ) : (
-        <Button type="button" variant="outline" aria-expanded={false} onClick={() => { setError(""); setConfirming(true); }}>{action}</Button>
+        <Button type="button" variant="outline" aria-expanded={false} onClick={() => { setError(""); setConfirming(true); onConfirmingChange?.(true); }}>{action}</Button>
       )}
     </div>
   );

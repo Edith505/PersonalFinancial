@@ -110,6 +110,7 @@ export function TransactionsPage() {
                   <div><dt className="text-muted-foreground">Catégorie</dt><dd className="break-words">{transaction.category?.name ?? "Sans catégorie"}</dd></div>
                   <div><dt className="text-muted-foreground">Type et statut</dt><dd>{typeLabels[transaction.type]} ({statusLabels[transaction.status]})</dd></div>
                 </dl>
+                {transaction.paymentCard && <p className="mt-3 break-words text-sm text-muted-foreground">Carte : {transaction.paymentCard.nickname} · •••• {transaction.paymentCard.last4}{!transaction.paymentCard.isActive && " (actuellement inactive)"}</p>}
                 {transaction.merchant && <p className="mt-3 break-words text-sm text-muted-foreground">Tiers : {transaction.merchant}</p>}
                 {transaction.status === "CANCELLED" && <p className="mt-3 text-sm text-muted-foreground">Transaction annulée, exclue du solde du compte.</p>}
                 <TransactionCancelAction transaction={transaction} onCancelled={() => {

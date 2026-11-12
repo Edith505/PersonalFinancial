@@ -19,6 +19,7 @@ export const listTransactionsQuerySchema = z
 export const createTransactionSchema = z
   .object({
     accountId: identifierSchema,
+    paymentCardId: identifierSchema.optional(),
     financialProfileId: identifierSchema,
     categoryId: identifierSchema,
     type: transactionTypeSchema,
@@ -32,7 +33,11 @@ export const createTransactionSchema = z
       .pipe(z.bigint().min(1n).max(999_999_999_999n)),
     transactionDate: z.iso.datetime({ offset: true }),
   })
-  .strict();
+  .strict()
+  .refine((value) => value.paymentCardId === undefined || value.type === "EXPENSE", {
+    message: "Une carte peut être associée uniquement à une dépense.",
+    path: ["paymentCardId"],
+  });
 
 export type ListTransactionsQuery = z.infer<typeof listTransactionsQuerySchema>;
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;

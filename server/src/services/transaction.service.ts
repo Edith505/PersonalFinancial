@@ -25,6 +25,7 @@ const transactionSelect = {
   },
   financialProfile: { select: { id: true, name: true } },
   category: { select: { id: true, name: true, type: true } },
+  paymentCard: { select: { id: true, nickname: true, last4: true, isActive: true } },
 } satisfies Prisma.TransactionSelect;
 
 type SelectedTransaction = Prisma.TransactionGetPayload<{
@@ -46,6 +47,7 @@ function serializeTransaction(transaction: SelectedTransaction) {
     account: { id: transaction.account.id, name: transaction.account.name },
     financialProfile: transaction.financialProfile,
     category: transaction.category,
+    paymentCard: transaction.paymentCard,
   };
 }
 
@@ -152,6 +154,11 @@ export async function getTransactionOptions(userId: string) {
         currencyCode: true,
         openingBalanceDate: true,
         currency: { select: { minorUnit: true } },
+        paymentCards: {
+          where: { userId, isActive: true },
+          orderBy: [{ nickname: "asc" }, { id: "asc" }],
+          select: { id: true, nickname: true, last4: true },
+        },
       },
     });
     const categories = await tx.category.findMany({
@@ -171,6 +178,7 @@ export async function getTransactionOptions(userId: string) {
         currencyCode: account.currencyCode,
         minorUnit: account.currency.minorUnit,
         openingBalanceDate: account.openingBalanceDate.toISOString(),
+        paymentCards: account.paymentCards,
       })),
     };
   });
@@ -194,6 +202,19 @@ export async function createTransaction(userId: string, input: CreateTransaction
     }
     if (!account.isActive || !account.financialProfile.isActive || !account.currency.isActive) {
       throw new AppError(409, "ACCOUNT_UNAVAILABLE", "Le compte, son profil et sa devise doivent être actifs.");
+    }
+
+    if (input.paymentCardId !== undefined) {
+      const card = await tx.paymentCard.findFirst({
+        where: { userId, id: input.paymentCardId, linkedAccountId: account.id },
+        select: { id: true, isActive: true },
+      });
+      if (!card) {
+        throw new AppError(404, "TRANSACTION_CARD_NOT_FOUND", "Cette carte est indisponible pour le compte choisi.");
+      }
+      if (!card.isActive) {
+        throw new AppError(409, "TRANSACTION_CARD_INACTIVE", "La carte choisie est inactive.");
+      }
     }
 
     // Le profil bénéficiaire peut différer du profil propriétaire du compte.
@@ -229,6 +250,7 @@ export async function createTransaction(userId: string, input: CreateTransaction
       data: {
         userId,
         accountId: account.id,
+        paymentCardId: input.paymentCardId ?? null,
         financialProfileId: profile.id,
         categoryId: category.id,
         type: input.type,

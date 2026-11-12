@@ -1,6 +1,6 @@
 import { prisma } from "../config/database.js";
 import type { Prisma } from "../generated/prisma/client.js";
-import type { CreateCardInput, ListCardsQuery } from "../validators/card.validator.js";
+import type { CreateCardInput, ListCardsQuery, UpdateCardInput } from "../validators/card.validator.js";
 import { AppError } from "../utils/AppError.js";
 
 const cardSelect = {
@@ -157,6 +157,37 @@ export async function setCardStatus(userId: string, cardId: string, isActive: bo
         entityType: "PAYMENT_CARD",
         entityId: cardId,
       },
+    });
+    return updated;
+  });
+}
+
+export async function updateCard(userId: string, cardId: string, input: UpdateCardInput) {
+  return prisma.$transaction(async (tx) => {
+    const card = await tx.paymentCard.findUnique({
+      where: { userId_id: { userId, id: cardId } },
+      select: cardSelect,
+    });
+    if (!card) {
+      throw new AppError(404, "CARD_NOT_FOUND", "La carte demandée est indisponible.");
+    }
+    const data = {
+      nickname: input.nickname ?? card.nickname,
+      cardholderName: input.cardholderName ?? card.cardholderName,
+      expiryMonth: input.expiryMonth === undefined ? card.expiryMonth : input.expiryMonth,
+      expiryYear: input.expiryYear === undefined ? card.expiryYear : input.expiryYear,
+    };
+    if (data.nickname === card.nickname && data.cardholderName === card.cardholderName &&
+        data.expiryMonth === card.expiryMonth && data.expiryYear === card.expiryYear) {
+      return card;
+    }
+    const updated = await tx.paymentCard.update({
+      where: { userId_id: { userId, id: cardId } },
+      data,
+      select: cardSelect,
+    });
+    await tx.auditLog.create({
+      data: { userId, action: "UPDATE", entityType: "PAYMENT_CARD", entityId: cardId },
     });
     return updated;
   });
