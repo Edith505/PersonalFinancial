@@ -1,7 +1,7 @@
 import { prisma } from "../config/database.js";
-import type { Prisma } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client.js";
 import { AppError } from "../utils/AppError.js";
-import type { CreateBudgetInput, ListBudgetsQuery, UpdateBudgetLimitsInput } from "../validators/budget.validator.js";
+import type { CopyBudgetPeriodInput, CreateBudgetInput, ListBudgetsQuery, UpdateBudgetLimitsInput } from "../validators/budget.validator.js";
 
 function monthBounds(month: string) {
   const year = Number(month.slice(0, 4));
@@ -29,6 +29,70 @@ const periodSelect = {
 } satisfies Prisma.BudgetPeriodSelect;
 
 type SelectedPeriod = Prisma.BudgetPeriodGetPayload<{ select: typeof periodSelect }>;
+
+export async function copyBudgetPeriod(userId: string, budgetId: string, sourcePeriodId: string, input: CopyBudgetPeriodInput) {
+  try {
+    return await prisma.$transaction(async (tx) => {
+      const source = await tx.budgetPeriod.findFirst({
+        where: { userId, id: sourcePeriodId, budgetId, budget: { userId } },
+        select: periodSelect,
+      });
+      if (!source) throw new AppError(404, "BUDGET_PERIOD_NOT_FOUND", "La période source est indisponible.");
+      if (!source.budget.isActive) throw new AppError(409, "BUDGET_INACTIVE", "Ce budget est inactif.");
+      if (source.timeZone !== "UTC") throw new AppError(409, "BUDGET_PERIOD_UNSUPPORTED", "Cette période utilise un fuseau horaire qui n’est pas encore pris en charge.");
+
+      const bounds = monthBounds(input.month);
+      const existing = await tx.budgetPeriod.findFirst({
+        where: { userId, budgetId, startDate: bounds.startDate }, select: { id: true },
+      });
+      if (existing) throw new AppError(409, "BUDGET_PERIOD_EXISTS", "Ce budget possède déjà une période pour le mois choisi.");
+
+      const currency = await tx.currency.findFirst({
+        where: { code: source.budget.currencyCode, isActive: true }, select: { code: true },
+      });
+      if (!currency) throw new AppError(409, "BUDGET_CURRENCY_INACTIVE", "La devise du budget doit être active.");
+      if (source.budget.financialProfileId) {
+        const profile = await tx.financialProfile.findFirst({
+          where: { userId, id: source.budget.financialProfileId, isActive: true }, select: { id: true },
+        });
+        if (!profile) throw new AppError(409, "BUDGET_PROFILE_INACTIVE", "Le profil du budget doit être actif.");
+      }
+      const categories = await tx.category.findMany({
+        where: { userId, id: { in: source.items.map((item) => item.category.id) }, isActive: true, type: "EXPENSE" },
+        select: { id: true },
+      });
+      if (source.items.length === 0 || categories.length !== source.items.length) {
+        throw new AppError(409, "BUDGET_CATEGORIES_UNAVAILABLE", "Toutes les catégories du budget source doivent être des catégories de dépenses actives.");
+      }
+
+      const created = await tx.budgetPeriod.create({
+        data: { userId, budgetId, ...bounds, timeZone: source.timeZone }, select: { id: true },
+      });
+      await tx.budgetItem.createMany({
+        data: source.items.map((item) => ({
+          userId, budgetPeriodId: created.id, categoryId: item.category.id, amountMinor: item.amountMinor,
+        })),
+      });
+      const period = await tx.budgetPeriod.findUniqueOrThrow({
+        where: { userId_id: { userId, id: created.id } }, select: periodSelect,
+      });
+      await tx.auditLog.createMany({
+        data: [
+          { userId, action: "CREATE", entityType: "BUDGET_PERIOD", entityId: period.id },
+          ...period.items.map((item) => ({ userId, action: "CREATE" as const, entityType: "BUDGET_ITEM" as const, entityId: item.id })),
+        ],
+      });
+      // Les dépenses sont relues pour la période cible, jamais copiées.
+      return summarizePeriod(tx, userId, period, new Date());
+    });
+  } catch (error) {
+    // La contrainte unique protège aussi deux demandes concurrentes.
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      throw new AppError(409, "BUDGET_PERIOD_EXISTS", "Ce budget possède déjà une période pour le mois choisi.");
+    }
+    throw error;
+  }
+}
 
 export async function updateBudgetLimits(
   userId: string,

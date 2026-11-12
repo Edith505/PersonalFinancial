@@ -43,6 +43,39 @@ export interface CreateBudgetPayload {
   items: Array<{ categoryId: string; amountMinor: string }>;
 }
 
+export async function copyBudgetPeriod(budgetId: string, periodId: string, month: string): Promise<Budget> {
+  let response: Response;
+  try {
+    response = await fetch(`/api/budgets/${encodeURIComponent(budgetId)}/periods/${encodeURIComponent(periodId)}/copy`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({ month }),
+    });
+  } catch {
+    throw new Error("Connexion interrompue. Consultez le mois choisi avant de réessayer : la période a peut-être été créée.");
+  }
+  if (!response.ok) {
+    const data: { error?: { code?: string } } | null = await response.json().catch(() => null);
+    const messages: Record<string, string> = {
+      INVALID_BUDGET_COPY: "Choisissez un mois valide entre janvier 2000 et décembre 2099.",
+      BUDGET_PERIOD_EXISTS: "Ce budget existe déjà pour ce mois. Consultez cette période pour modifier ses plafonds.",
+      BUDGET_PERIOD_NOT_FOUND: "La période source n’est plus disponible.",
+      BUDGET_INACTIVE: "Ce budget est inactif.",
+      BUDGET_PERIOD_UNSUPPORTED: "Le fuseau horaire de cette période n’est pas encore pris en charge.",
+      BUDGET_CURRENCY_INACTIVE: "La devise du budget doit être active.",
+      BUDGET_PROFILE_INACTIVE: "Le profil du budget doit être actif.",
+      BUDGET_CATEGORIES_UNAVAILABLE: "Toutes les catégories source doivent être des catégories de dépenses actives.",
+    };
+    throw new Error(messages[data?.error?.code ?? ""] ?? "La reconduction n’a pas pu être confirmée. Consultez le mois choisi avant de réessayer.");
+  }
+  try {
+    const data: { item: Budget } = await response.json();
+    return data.item;
+  } catch {
+    throw new Error("Réponse illisible. Consultez le mois choisi pour vérifier si la période a été créée.");
+  }
+}
+
 export async function updateBudgetLimits(
   budgetId: string,
   periodId: string,

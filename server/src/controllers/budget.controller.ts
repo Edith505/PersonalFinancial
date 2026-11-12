@@ -1,8 +1,19 @@
 import type { RequestHandler } from "express";
 import { getCurrentUserId } from "../services/currentUser.service.js";
-import { createBudget, getBudgetOptions, listBudgets, updateBudgetLimits } from "../services/budget.service.js";
-import { budgetPeriodParamsSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetLimitsSchema } from "../validators/budget.validator.js";
+import { copyBudgetPeriod, createBudget, getBudgetOptions, listBudgets, updateBudgetLimits } from "../services/budget.service.js";
+import { budgetPeriodParamsSchema, copyBudgetPeriodSchema, createBudgetSchema, listBudgetsQuerySchema, updateBudgetLimitsSchema } from "../validators/budget.validator.js";
 import { AppError } from "../utils/AppError.js";
+
+export const copyBudgetPeriodController: RequestHandler = async (request, response, next) => {
+  try {
+    const params = budgetPeriodParamsSchema.safeParse(request.params);
+    const body = copyBudgetPeriodSchema.safeParse(request.body);
+    if (!params.success || !body.success) throw new AppError(400, "INVALID_BUDGET_COPY", "Choisissez une période source et un mois valides.");
+    const userId = await getCurrentUserId();
+    const budget = await copyBudgetPeriod(userId, params.data.id, params.data.periodId, body.data);
+    response.status(201).json({ item: budget });
+  } catch (error) { next(error); }
+};
 
 export const updateBudgetLimitsController: RequestHandler = async (request, response, next) => {
   try {

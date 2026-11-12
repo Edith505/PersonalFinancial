@@ -3,13 +3,15 @@ import { Button } from "@/components/ui/button";
 import { formatMoney } from "@/lib/format-money";
 import { CreateBudgetForm } from "@/features/budgets/CreateBudgetForm";
 import { EditBudgetLimitsForm } from "@/features/budgets/EditBudgetLimitsForm";
+import { CopyBudgetPeriodForm } from "@/features/budgets/CopyBudgetPeriodForm";
 import { fetchBudgets, type Budget, type BudgetsResponse } from "@/features/budgets/budgets-api";
 
 type LoadState = { status: "loading" } | { status: "error"; message: string } | { status: "success"; data: BudgetsResponse };
 const monthFormatter = new Intl.DateTimeFormat("fr-CA", { month: "long", year: "numeric", timeZone: "UTC" });
 
-function BudgetCard({ budget, onUpdated }: { budget: Budget; onUpdated: (budget: Budget) => void }) {
+function BudgetCard({ budget, onUpdated, onCopied }: { budget: Budget; onUpdated: (budget: Budget) => void; onCopied: (budget: Budget) => void }) {
   const [editing, setEditing] = useState(false);
+  const [copying, setCopying] = useState(false);
   const money = (value: string) => formatMoney(value, budget.minorUnit, budget.currencyCode);
   const remaining = BigInt(budget.totals.remainingMinor);
   return <article className="min-w-0 space-y-5 rounded-2xl border bg-card p-5 text-card-foreground shadow-sm">
@@ -42,8 +44,13 @@ function BudgetCard({ budget, onUpdated }: { budget: Budget; onUpdated: (budget:
       <p>Dépenses dans les catégories non prévues : <strong className="tabular-nums">{money(budget.totals.unbudgetedSpentMinor)}</strong>.</p>
       <p className="text-muted-foreground">Toutes les dépenses du mois pour ce profil et cette devise : {money(budget.totals.totalExpensesMinor)}.</p>
     </div>
-    {editing ? <EditBudgetLimitsForm budget={budget} onCancel={() => setEditing(false)} onSaved={(updated) => { setEditing(false); onUpdated(updated); }} /> : (
-      <Button type="button" variant="outline" disabled={!budget.isActive} aria-label={`Modifier les plafonds du budget ${budget.name}`} onClick={() => setEditing(true)}>Modifier les plafonds</Button>
+    {editing ? <EditBudgetLimitsForm budget={budget} onCancel={() => setEditing(false)} onSaved={(updated) => { setEditing(false); onUpdated(updated); }} /> : copying ? (
+      <CopyBudgetPeriodForm budget={budget} onCancel={() => setCopying(false)} onCopied={(created) => { setCopying(false); onCopied(created); }} />
+    ) : (
+      <div className="flex flex-wrap gap-3">
+        <Button type="button" variant="outline" disabled={!budget.isActive} aria-label={`Modifier les plafonds du budget ${budget.name}`} onClick={() => setEditing(true)}>Modifier les plafonds</Button>
+        <Button type="button" variant="outline" disabled={!budget.isActive} aria-label={`Reconduire le budget ${budget.name}`} onClick={() => setCopying(true)}>Reconduire</Button>
+      </div>
     )}
   </article>;
 }
@@ -98,7 +105,7 @@ export function BudgetsPage() {
     {state.status === "error" && <div className="rounded-2xl border border-destructive/40 bg-card p-6"><p role="alert" className="text-destructive">{state.message}</p><Button type="button" variant="outline" onClick={reload} className="mt-4">Réessayer</Button></div>}
     {state.status === "success" && <>
       <p role="status" className="text-sm text-muted-foreground">{state.data.pagination.total} budget(s) pour ce mois. Périodes en UTC.</p>
-      {state.data.items.length === 0 ? <div className="rounded-2xl border bg-card p-8"><h2 className="text-lg font-semibold">Aucun budget sur cette page</h2><p className="mt-2 text-muted-foreground">Choisissez un autre mois ou créez un budget.</p></div> : <div className="grid items-start gap-6 xl:grid-cols-2">{state.data.items.map((budget) => <BudgetCard key={budget.periodId} budget={budget} onUpdated={(updated) => { setSuccess(`Les plafonds du budget « ${updated.name} » ont été modifiés.`); reload(); }} />)}</div>}
+      {state.data.items.length === 0 ? <div className="rounded-2xl border bg-card p-8"><h2 className="text-lg font-semibold">Aucun budget sur cette page</h2><p className="mt-2 text-muted-foreground">Choisissez un autre mois ou créez un budget.</p></div> : <div className="grid items-start gap-6 xl:grid-cols-2">{state.data.items.map((budget) => <BudgetCard key={budget.periodId} budget={budget} onUpdated={(updated) => { setSuccess(`Les plafonds du budget « ${updated.name} » ont été modifiés.`); reload(); }} onCopied={(created) => { setMonth(created.period.month); setPage(1); setSuccess(`Le budget « ${created.name} » a été reconduit pour ${created.period.month}.`); reload(); }} />)}</div>}
       <nav aria-label="Pagination des budgets" className="flex flex-wrap items-center justify-between gap-4">
         <Button type="button" variant="outline" disabled={page <= 1} onClick={() => changePage(page - 1)}>Précédent</Button>
         <span className="text-sm text-muted-foreground">Page {page} sur {Math.max(1, state.data.pagination.totalPages)}</span>

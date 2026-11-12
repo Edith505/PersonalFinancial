@@ -48,3 +48,6 @@ export const updateBudgetLimitsSchema = z.object({
 });
 
 export type UpdateBudgetLimitsInput = z.infer<typeof updateBudgetLimitsSchema>;
+
+export const copyBudgetPeriodSchema = z.object({ month: monthSchema }).strict();
+export type CopyBudgetPeriodInput = z.infer<typeof copyBudgetPeriodSchema>;
