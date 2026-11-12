@@ -8,6 +8,7 @@ import { CategoriesPage } from "@/pages/CategoriesPage";
 import { TransactionsPage } from "@/pages/TransactionsPage";
 import { TransfersPage } from "@/pages/TransfersPage";
 import { BudgetsPage } from "@/pages/BudgetsPage";
+import { CardsPage } from "@/pages/CardsPage";
 
 export default function App() {
   return (
@@ -31,6 +32,8 @@ export default function App() {
                   <TransfersPage />
                 ) : path === "/budgets" ? (
                   <BudgetsPage />
+                ) : path === "/cards" ? (
+                  <CardsPage />
                 ) : (
                   <ModulePlaceholderPage title={label} />
                 )

@@ -11,6 +11,7 @@ import { transactionRouter } from "./routes/transaction.routes.js";
 import { transferRouter } from "./routes/transfer.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
 import { budgetRouter } from "./routes/budget.routes.js";
+import { cardRouter } from "./routes/card.routes.js";
 
 
 export const app = express();
@@ -70,6 +71,7 @@ app.use("/api/transactions", transactionRouter);
 app.use("/api/transfers", transferRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/budgets", budgetRouter);
+app.use("/api/cards", cardRouter);
 
 app.use((_request, _response, next) => {
   next(
