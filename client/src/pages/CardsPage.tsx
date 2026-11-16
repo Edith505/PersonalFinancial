@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router";
 import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CreateCardForm } from "@/features/cards/CreateCardForm";
@@ -54,8 +55,9 @@ function CardDetails({ card, onUpdated }: { card: PaymentCard; onUpdated: (card:
         }} />
       ) : (
         <>
-          <div className="px-6 pb-4">
+          <div className="flex flex-wrap items-center gap-3 px-6 pb-4">
             <Button type="button" variant="outline" disabled={confirmingStatus} onClick={() => setEditing(true)}>Modifier</Button>
+            {!confirmingStatus && <Link to={`/transactions?paymentCardId=${encodeURIComponent(card.id)}`} className="rounded-lg px-3 py-2 text-sm font-medium text-primary underline underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">Voir les dépenses</Link>}
           </div>
           <CardStatusControl card={card} onConfirmingChange={setConfirmingStatus} onUpdated={(updated) => onUpdated(updated, "status")} />
         </>

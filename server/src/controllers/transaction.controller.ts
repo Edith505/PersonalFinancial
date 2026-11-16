@@ -4,6 +4,7 @@ import {
   cancelTransaction,
   createTransaction,
   getTransactionOptions,
+  getTransactionFilterOptions,
   listTransactions,
 } from "../services/transaction.service.js";
 import { AppError } from "../utils/AppError.js";
@@ -46,6 +47,15 @@ export const getTransactionOptionsController: RequestHandler = async (_request, 
   try {
     const userId = await getCurrentUserId();
     response.json(await getTransactionOptions(userId));
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getTransactionFilterOptionsController: RequestHandler = async (_request, response, next) => {
+  try {
+    const userId = await getCurrentUserId();
+    response.json(await getTransactionFilterOptions(userId));
   } catch (error) {
     next(error);
   }

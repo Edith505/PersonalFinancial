@@ -102,14 +102,29 @@ export async function cancelTransaction(userId: string, transactionId: string) {
 }
 
 export async function listTransactions(userId: string, query: ListTransactionsQuery) {
+  const monthStart = query.month ? new Date(`${query.month}-01T00:00:00.000Z`) : null;
+  const monthEnd = monthStart ? new Date(monthStart) : null;
+  if (monthEnd) monthEnd.setUTCMonth(monthEnd.getUTCMonth() + 1);
   const where: Prisma.TransactionWhereInput = {
     userId,
+    ...(query.status ? { status: query.status } : {}),
+    ...(monthStart && monthEnd ? { transactionDate: { gte: monthStart, lt: monthEnd } } : {}),
     ...(query.type ? { type: query.type } : {}),
     ...(query.accountId ? { accountId: query.accountId } : {}),
+    ...(query.paymentCardId ? { paymentCardId: query.paymentCardId } : {}),
     ...(query.financialProfileId ? { financialProfileId: query.financialProfileId } : {}),
   };
 
   return prisma.$transaction(async (tx) => {
+    const filterCard = query.paymentCardId
+      ? await tx.paymentCard.findUnique({
+          where: { userId_id: { userId, id: query.paymentCardId } },
+          select: { id: true, nickname: true, last4: true, isActive: true },
+        })
+      : null;
+    if (query.paymentCardId && !filterCard) {
+      throw new AppError(404, "CARD_NOT_FOUND", "La carte demandée est indisponible.");
+    }
     const total = await tx.transaction.count({ where });
     const items = await tx.transaction.findMany({
       where,
@@ -121,6 +136,7 @@ export async function listTransactions(userId: string, query: ListTransactionsQu
 
     return {
       items: items.map(serializeTransaction),
+      filterCard,
       pagination: {
         page: query.page,
         pageSize: query.pageSize,
@@ -128,6 +144,22 @@ export async function listTransactions(userId: string, query: ListTransactionsQu
         totalPages: Math.ceil(total / query.pageSize),
       },
     };
+  });
+}
+
+export async function getTransactionFilterOptions(userId: string) {
+  return prisma.$transaction(async (tx) => {
+    const accounts = await tx.financialAccount.findMany({
+      where: { userId },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: { id: true, name: true, currencyCode: true, isActive: true },
+    });
+    const profiles = await tx.financialProfile.findMany({
+      where: { userId },
+      orderBy: [{ name: "asc" }, { id: "asc" }],
+      select: { id: true, name: true, isActive: true },
+    });
+    return { accounts, profiles };
   });
 }
 

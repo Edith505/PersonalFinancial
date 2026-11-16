@@ -1,5 +1,6 @@
 export type EntryType = "INCOME" | "EXPENSE";
 export type TransactionFilter = "ALL" | EntryType;
+export type TransactionStatusFilter = "ALL" | "PENDING" | "POSTED" | "CANCELLED";
 
 export interface Transaction {
   id: string;
@@ -20,7 +21,21 @@ export interface Transaction {
 
 export interface TransactionsResponse {
   items: Transaction[];
+  filterCard: { id: string; nickname: string; last4: string; isActive: boolean } | null;
   pagination: { page: number; pageSize: number; total: number; totalPages: number };
+}
+
+export interface TransactionFilterOptions {
+  accounts: Array<{ id: string; name: string; currencyCode: string; isActive: boolean }>;
+  profiles: Array<{ id: string; name: string; isActive: boolean }>;
+}
+
+export async function fetchTransactionFilterOptions(signal: AbortSignal): Promise<TransactionFilterOptions> {
+  const response = await fetch("/api/transactions/filter-options", {
+    signal, cache: "no-store", headers: { Accept: "application/json" },
+  });
+  if (!response.ok) throw new Error("Impossible de charger les comptes et profils du filtre.");
+  return response.json();
 }
 
 export interface TransactionOptions {
@@ -85,15 +100,29 @@ export async function fetchTransactions(
   page: number,
   filter: TransactionFilter,
   signal: AbortSignal,
+  paymentCardId?: string,
+  accountId?: string,
+  financialProfileId?: string,
+  period: { month: string; status: TransactionStatusFilter } = { month: "", status: "ALL" },
 ): Promise<TransactionsResponse> {
   const query = new URLSearchParams({ page: String(page), pageSize: "12" });
   if (filter !== "ALL") query.set("type", filter);
+  if (paymentCardId !== undefined) query.set("paymentCardId", paymentCardId);
+  if (accountId) query.set("accountId", accountId);
+  if (financialProfileId) query.set("financialProfileId", financialProfileId);
+  if (period.month) query.set("month", period.month);
+  if (period.status !== "ALL") query.set("status", period.status);
   const response = await fetch(`/api/transactions?${query}`, {
     signal,
     cache: "no-store",
     headers: { Accept: "application/json" },
   });
-  if (!response.ok) throw new Error("Impossible de charger les transactions. Vérifiez que le serveur est démarré.");
+  if (!response.ok) {
+    const data: { error?: { code?: string } } | null = await response.json().catch(() => null);
+    if (data?.error?.code === "CARD_NOT_FOUND") throw new Error("Cette carte est introuvable ou indisponible. Revenez aux cartes ou affichez toutes les transactions.");
+    if (data?.error?.code === "INVALID_QUERY") throw new Error("Le filtre de recherche est invalide. Revenez à toutes les transactions.");
+    throw new Error("Impossible de charger les transactions. Vérifiez que le serveur est démarré.");
+  }
   return response.json();
 }
 
