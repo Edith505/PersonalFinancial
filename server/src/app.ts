@@ -12,6 +12,7 @@ import { transferRouter } from "./routes/transfer.routes.js";
 import { dashboardRouter } from "./routes/dashboard.routes.js";
 import { budgetRouter } from "./routes/budget.routes.js";
 import { cardRouter } from "./routes/card.routes.js";
+import { profileRouter } from "./routes/profile.routes.js";
 
 
 export const app = express();
@@ -72,6 +73,7 @@ app.use("/api/transfers", transferRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/budgets", budgetRouter);
 app.use("/api/cards", cardRouter);
+app.use("/api/profiles", profileRouter);
 
 app.use((_request, _response, next) => {
   next(

@@ -14,6 +14,7 @@ import {
   Tags,
   Wallet,
   WalletCards,
+  Users,
 } from "lucide-react";
 
 export const navigationItems = [
@@ -21,6 +22,7 @@ export const navigationItems = [
   { path: "/transactions", label: "Transactions", icon: ListOrdered },
   { path: "/categories", label: "Catégories", icon: Tags },
   { path: "/accounts", label: "Accounts", icon: Wallet },
+  { path: "/profiles", label: "Profils", icon: Users },
   { path: "/cards", label: "Cards", icon: CreditCard },
   { path: "/budgets", label: "Budgets", icon: WalletCards },
   { path: "/income", label: "Income", icon: Banknote },

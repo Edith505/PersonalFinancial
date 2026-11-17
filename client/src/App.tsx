@@ -9,6 +9,7 @@ import { TransactionsPage } from "@/pages/TransactionsPage";
 import { TransfersPage } from "@/pages/TransfersPage";
 import { BudgetsPage } from "@/pages/BudgetsPage";
 import { CardsPage } from "@/pages/CardsPage";
+import { ProfilesPage } from "@/pages/ProfilesPage";
 
 export default function App() {
   return (
@@ -34,6 +35,8 @@ export default function App() {
                   <BudgetsPage />
                 ) : path === "/cards" ? (
                   <CardsPage />
+                ) : path === "/profiles" ? (
+                  <ProfilesPage />
                 ) : (
                   <ModulePlaceholderPage title={label} />
                 )
